@@ -187,3 +187,22 @@ TEST_CASE("Game castling") {
 		REQUIRE_NOTHROW(game.move({.from = {.file = Files::E, .rank = 1}, .to = {.file = Files::G, .rank = 1}}));
 	}
 }
+
+TEST_CASE("Game branching") {
+	Game game;
+
+	SECTION("Basic branching") {
+		Game future;
+
+		REQUIRE_NOTHROW(game.move({.from = {.file = Files::E, .rank = 2}, .to = {.file = Files::E, .rank = 4}}));
+		REQUIRE_NOTHROW(game.move({.from = {.file = Files::E, .rank = 7}, .to = {.file = Files::E, .rank = 5}}));
+
+		REQUIRE_NOTHROW(game.move({.from = {.file = Files::G, .rank = 1}, .to = {.file = Files::F, .rank = 3}}));
+		REQUIRE_NOTHROW(game.move({.from = {.file = Files::B, .rank = 8}, .to = {.file = Files::C, .rank = 6}}));
+
+		REQUIRE_NOTHROW(game.move({.from = {.file = Files::F, .rank = 1}, .to = {.file = Files::B, .rank = 5}}));
+
+		REQUIRE_NOTHROW(future = game.branch({.from = {.file = Files::F, .rank = 8}, .to = {.file = Files::B, .rank = 4}}));
+		REQUIRE(future.turn() == Players::WHITE);
+	}
+}

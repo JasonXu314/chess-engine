@@ -30,6 +30,8 @@ public:
 
 	File operator[](Files file) const;
 
+	Board& operator=(const Board& other);
+
 	~Board();
 
 private:

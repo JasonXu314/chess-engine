@@ -55,6 +55,11 @@ public:
 	// returns true if pawn reached promotion (also sets shouldPromote private variable)
 	bool move(const Move& move);
 
+	// Evaluates the move in a new game (for hypothetical futures); note the const
+	Game branch(const Move& other) const;
+
+	std::vector<Move> getAvailableMoves() const;
+
 	void promote(const Position& pos, PieceTypes to);
 
 	bool isChecked() const;
@@ -69,6 +74,8 @@ public:
 	Players turn() const;
 
 	bool shouldPromote() const;
+
+	Game& operator=(const Game& other);
 
 private:
 	Board _board;

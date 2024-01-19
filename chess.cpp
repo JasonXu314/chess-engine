@@ -2,6 +2,8 @@
 
 using namespace std;
 
+int TWOS[2] = {-2, 2}, ONES[2] = {-1, 1};
+
 bool operator==(const Position& a, const Position& b) { return a.file == b.file && a.rank == b.rank; }
 
 string to_string(const Position& pos) {
@@ -324,6 +326,375 @@ bool Game::move(const Move& move) {
 	}
 }
 
+Game Game::branch(const Move& move) const {
+	Game future(*this);
+
+	try {
+		future.move(move);
+
+		return future;
+	} catch (const runtime_error& err) {
+		throw runtime_error("Branching error: move failed with '" + string(err.what()) + "'");
+	} catch (...) {
+		throw runtime_error("Branching error: move failed with unknown error.");
+	}
+}
+
+vector<Move> Game::getAvailableMoves() const {
+	vector<Move> out;
+
+	const vector<Piece>& player = _turn == Players::WHITE ? _white : _black;
+
+	// first, naively generate available moves based only on piece location
+	for (const Piece& piece : player) {
+		switch (piece._type) {
+			case PieceTypes::PAWN:
+				if (piece._position.rank == (_turn == Players::WHITE ? 2 : 7) &&
+					!hasPiece({.file = piece._position.file, .rank = piece._position.rank + (_turn == Players::WHITE ? 2 : -2)})) {
+					out.push_back(
+						{.from = piece._position, .to = {.file = piece._position.file, .rank = piece._position.rank + (_turn == Players::WHITE ? 2 : -2)}});
+				}
+				if (!hasPiece({.file = piece._position.file, .rank = piece._position.rank + (_turn == Players::WHITE ? 1 : -1)})) {
+					out.push_back(
+						{.from = piece._position, .to = {.file = piece._position.file, .rank = piece._position.rank + (_turn == Players::WHITE ? 1 : -1)}});
+				}
+
+				if (piece._position.file != Files::A) {
+					Position captureLeft = {.file = (Files)((int)piece._position.file - 1),
+											.rank = piece._position.rank + (_turn == Players::WHITE ? 1 : -1)};
+
+					if (hasPiece(captureLeft) && getPiece(captureLeft)._player != _turn) {
+						out.push_back({.from = piece._position, .to = captureLeft});
+					}
+				}
+				if (piece._position.file != Files::H) {
+					Position captureRight = {.file = (Files)((int)piece._position.file + 1),
+											 .rank = piece._position.rank + (_turn == Players::WHITE ? 1 : -1)};
+
+					if (hasPiece(captureRight) && getPiece(captureRight)._player != _turn) {
+						out.push_back({.from = piece._position, .to = captureRight});
+					}
+				}
+				break;
+			case PieceTypes::KNIGHT:
+				for (int fDelta : TWOS) {
+					for (int rDelta : ONES) {
+						int newFile = (int)piece._position.file + fDelta, newRank = piece._position.rank + rDelta;
+
+						if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+							Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+							if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+								out.push_back({.from = piece._position, .to = newPos});
+							}
+						}
+					}
+				}
+
+				for (int fDelta : ONES) {
+					for (int rDelta : TWOS) {
+						int newFile = (int)piece._position.file + fDelta, newRank = piece._position.rank + rDelta;
+
+						if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+							Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+							if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+								out.push_back({.from = piece._position, .to = newPos});
+							}
+						}
+					}
+				}
+				break;
+			case PieceTypes::BISHOP:
+				// could probably optimize by checking in all 4 directions at once, but would require some ugly bool stuff i think
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file + delta, newRank = piece._position.rank + delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file + delta, newRank = piece._position.rank - delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file - delta, newRank = piece._position.rank + delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file - delta, newRank = piece._position.rank - delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				break;
+			case PieceTypes::ROOK:
+				// could probably optimize by checking in all 4 directions at once, but would require some ugly bool stuff i think
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file + delta, newRank = piece._position.rank;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file - delta, newRank = piece._position.rank;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file, newRank = piece._position.rank + delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file, newRank = piece._position.rank - delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				break;
+			case PieceTypes::QUEEN:
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file + delta, newRank = piece._position.rank + delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file + delta, newRank = piece._position.rank - delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file - delta, newRank = piece._position.rank + delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file - delta, newRank = piece._position.rank - delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file + delta, newRank = piece._position.rank;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file - delta, newRank = piece._position.rank;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file, newRank = piece._position.rank + delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				for (uint delta = 1; delta < 8; delta++) {
+					int newFile = (int)piece._position.file, newRank = piece._position.rank - delta;
+
+					if (newFile >= 0 && newFile < 8 && newRank >= 1 && newRank <= 8) {
+						Position newPos = {.file = (Files)newFile, .rank = (uint)newRank};
+
+						if (!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn)) {
+							out.push_back({.from = piece._position, .to = newPos});
+						}
+					} else {
+						break;
+					}
+				}
+				break;
+			case PieceTypes::KING:
+				// start from top left and search clockwise
+				Position newPos = {.file = (Files)((int)piece._position.file - 1), .rank = piece._position.rank + 1};
+
+				if (newPos.file >= 0 && newPos.file < 8 && newPos.rank >= 1 && newPos.rank <= 8 &&
+					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
+					out.push_back({.from = piece._position, .to = newPos});
+				}
+
+				newPos.file = (Files)((int)newPos.file + 1);
+
+				if (newPos.file >= 0 && newPos.file < 8 && newPos.rank >= 1 && newPos.rank <= 8 &&
+					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
+					out.push_back({.from = piece._position, .to = newPos});
+				}
+
+				newPos.file = (Files)((int)newPos.file + 1);
+
+				if (newPos.file >= 0 && newPos.file < 8 && newPos.rank >= 1 && newPos.rank <= 8 &&
+					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
+					out.push_back({.from = piece._position, .to = newPos});
+				}
+
+				newPos.rank--;
+
+				if (newPos.file >= 0 && newPos.file < 8 && newPos.rank >= 1 && newPos.rank <= 8 &&
+					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
+					out.push_back({.from = piece._position, .to = newPos});
+				}
+
+				newPos.rank--;
+
+				if (newPos.file >= 0 && newPos.file < 8 && newPos.rank >= 1 && newPos.rank <= 8 &&
+					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
+					out.push_back({.from = piece._position, .to = newPos});
+				}
+
+				newPos.file = (Files)((int)newPos.file - 1);
+
+				if (newPos.file >= 0 && newPos.file < 8 && newPos.rank >= 1 && newPos.rank <= 8 &&
+					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
+					out.push_back({.from = piece._position, .to = newPos});
+				}
+
+				newPos.file = (Files)((int)newPos.file - 1);
+
+				if (newPos.file >= 0 && newPos.file < 8 && newPos.rank >= 1 && newPos.rank <= 8 &&
+					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
+					out.push_back({.from = piece._position, .to = newPos});
+				}
+
+				newPos.rank++;
+
+				if (newPos.file >= 0 && newPos.file < 8 && newPos.rank >= 1 && newPos.rank <= 8 &&
+					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
+					out.push_back({.from = piece._position, .to = newPos});
+				}
+				break;
+		}
+	}
+
+	// then, validate with futures (not with move because that would modify things if a move succeeds)
+	for (uint i = 0; i < out.size(); i++) {
+		try {
+			branch(out[i]);
+		} catch (...) {
+			out.erase(out.begin() + i);
+			i--;
+		}
+	}
+
+	return out;
+}
+
 void Game::promote(const Position& pos, PieceTypes to) {
 	Piece& piece = _getPieceRef(pos);
 
@@ -503,6 +874,23 @@ bool Game::hasPiece(const Position& pos) const { return _board[pos.file][pos.ran
 const Board& Game::board() const { return _board; }
 Players Game::turn() const { return _turn; }
 bool Game::shouldPromote() const { return _shouldPromote; }
+
+Game& Game::operator=(const Game& other) {
+	_board = other._board;
+	_turn = other._turn;
+	_firstMove = other._firstMove;
+	_prevMove = other._prevMove;
+	_shouldPromote = other._shouldPromote;
+
+	for (const Piece& piece : other._white) {
+		_white.push_back(Piece(piece._symbol, piece._position));
+	}
+	for (const Piece& piece : other._black) {
+		_black.push_back(Piece(piece._symbol, piece._position));
+	}
+
+	return *this;
+}
 
 void Game::_validatePawnMove(const Move& move) const {
 	Piece piece = getPiece(move.from);

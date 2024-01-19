@@ -35,6 +35,14 @@ char& Board::File::operator[](uint rank) {
 	return _board[_file * 8 + rank - 1];
 }
 
+Board& Board::operator=(const Board& other) {
+	for (int i = 0; i < 64; i++) {
+		_board[i] = other._board[i];
+	}
+
+	return *this;
+}
+
 void Board::File::_ensureRange(uint rank) const {
 	if (rank > 8 || rank < 1) {
 		throw runtime_error("Rank " + to_string(rank) + " out of bounds.");

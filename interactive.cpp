@@ -135,17 +135,38 @@ int main() {
 void printBoard(const Game& game, bool squareSelected, const Position& selectedSquare) {
 	bool black = true;
 
+	vector<Move> availableMoves;
+
+	if (squareSelected) {
+		for (const Move& move : game.getAvailableMoves()) {
+			if (move.from == selectedSquare) {
+				availableMoves.push_back(move);
+			}
+		}
+	}
+
 	for (Files file : FILES) {
 		for (uint rank = 1; rank <= 8; rank++) {
 			Position square = {.file = file, .rank = rank};
+
+			bool isMoveTarget = false;
+			for (const Move& move : availableMoves) {
+				if (move.to == square) {
+					isMoveTarget = true;
+					break;
+				}
+			}
 
 			if (game.hasPiece(square)) {
 				try {
 					Piece piece = game.getPiece(square);
 
-					if (squareSelected && square == selectedSquare)
-						attron(COLOR_PAIR(1));
-					else if (game.isChecked() && piece.type() == PieceTypes::KING && piece.player() == game.turn())
+					if (squareSelected && (square == selectedSquare || isMoveTarget)) {
+						if (square == selectedSquare)
+							attron(COLOR_PAIR(1));
+						else if (isMoveTarget)
+							attron(COLOR_PAIR(2));
+					} else if (game.isChecked() && piece.type() == PieceTypes::KING && piece.player() == game.turn())
 						attron(COLOR_PAIR(2));
 					else if (!black)
 						attron(A_REVERSE);
@@ -160,19 +181,14 @@ void printBoard(const Game& game, bool squareSelected, const Position& selectedS
 						}
 					}
 
-					if (squareSelected && square == selectedSquare)
-						attroff(COLOR_PAIR(1));
-					else if (game.isChecked() && piece.type() == PieceTypes::KING && piece.player() == game.turn())
-						attroff(COLOR_PAIR(2));
-					else if (!black)
-						attroff(A_REVERSE);
+					attrset(A_NORMAL);
 				} catch (const runtime_error& e) {
 					throw runtime_error("Rendering error at position " + to_string(square) + ": " + string(e.what()));
 				} catch (...) {
 					throw runtime_error("Unknown rendering error");
 				}
 			} else {
-				if (squareSelected && square == selectedSquare)
+				if (squareSelected && (square == selectedSquare || isMoveTarget))
 					attron(COLOR_PAIR(1));
 				else if (!black)
 					attron(A_REVERSE);
@@ -181,10 +197,7 @@ void printBoard(const Game& game, bool squareSelected, const Position& selectedS
 					mvprintw((8 - rank) * 3 + i, file * 6, "      ");
 				}
 
-				if (squareSelected && square == selectedSquare)
-					attroff(COLOR_PAIR(1));
-				else if (!black)
-					attroff(A_REVERSE);
+				attrset(A_NORMAL);
 			}
 
 			black = !black;
