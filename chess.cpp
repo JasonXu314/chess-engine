@@ -279,12 +279,15 @@ bool Game::move(const Move& move) {
 	if (piece._type == PieceTypes::KING && abs((int)move.to.file - (int)move.from.file) == 2) {
 		// consider castling
 		int castleDir = (int)move.to.file - (int)move.from.file < 0 ? -1 : 1;
-		Piece rook = getPiece({.file = castleDir == -1 ? Files::A : Files::H, .rank = _turn == Players::WHITE ? 1u : 8u});
+		Position rookPos = {.file = castleDir == -1 ? Files::A : Files::H, .rank = _turn == Players::WHITE ? 1u : 8u};
+		Piece& rook = _getPieceRef(rookPos);
 
 		Position rookTo = move.to;
 		rookTo.file = (Files)((int)rookTo.file + (castleDir == -1 ? 1 : -1));
 
 		rook._position = rookTo;
+		_board[rookPos.file][rookPos.rank] = '\0';
+		_board[rookTo.file][rookTo.rank] = (_turn == Players::WHITE ? 'R' : 'r');
 	}
 
 	_prevMove = move;
