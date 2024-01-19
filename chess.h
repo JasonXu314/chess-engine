@@ -56,6 +56,9 @@ public:
 
 	void promote(const Position& pos, PieceTypes to);
 
+	bool isChecked() const;
+	bool isChecked(Players player) const;
+
 	Piece getPiece(const Position& pos) const;
 
 	bool hasPiece(const Position& pos) const;

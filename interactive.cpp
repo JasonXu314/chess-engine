@@ -99,7 +99,9 @@ int main() {
 			if (squareSelected) {
 				mvprintw(24, 0, to_string(selectedSquare).c_str());
 			}
-			mvprintw(25, 0, game.turn() == Players::WHITE ? "White to move" : "Black to move");
+			mvprintw(25, 0,
+					 game.turn() == Players::WHITE ? game.isChecked() ? "White to move (check!)" : "White to move"
+												   : game.isChecked() ? "Black to move (check!)" : "Black to move");
 			if (error != "") {
 				attron(COLOR_PAIR(2));
 				mvprintw(26, 0, error.c_str());
@@ -148,6 +150,8 @@ void printBoard(const Game& game, bool squareSelected, const Position& selectedS
 
 					if (squareSelected && square == selectedSquare)
 						attron(COLOR_PAIR(1));
+					else if (game.isChecked() && piece.type() == PieceTypes::KING && piece.player() == game.turn())
+						attron(COLOR_PAIR(2));
 					else if (!black)
 						attron(A_REVERSE);
 
@@ -163,6 +167,8 @@ void printBoard(const Game& game, bool squareSelected, const Position& selectedS
 
 					if (squareSelected && square == selectedSquare)
 						attroff(COLOR_PAIR(1));
+					else if (game.isChecked() && piece.type() == PieceTypes::KING && piece.player() == game.turn())
+						attroff(COLOR_PAIR(2));
 					else if (!black)
 						attroff(A_REVERSE);
 				} catch (const runtime_error& e) {

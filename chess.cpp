@@ -184,6 +184,7 @@ bool Game::move(const Move& move) {
 		}
 	}
 
+	// Using a different algorithm here compared to the isChecked function because we have to deal with the fact that we're "inside" of a move
 	for (const Piece& opponentPiece : other) {
 		if (opponentPiece._position == move.to) continue;  // TODO: consider en passant
 
@@ -192,7 +193,7 @@ bool Game::move(const Move& move) {
 				try {
 					// TODO: no idea if en passant is an edge case here? (i think it shouldnt)
 					_validatePawnMove({.from = opponentPiece._position, .to = kingPos});
-					break;	// breaks out of switch block, triggering "trap"
+					break;	// normal breakout of switch block, triggering "trap"
 				} catch (...) {
 					continue;  // skips the "trap" at the bottom of each iteration
 				}
@@ -371,6 +372,76 @@ Piece Game::getPiece(const Position& pos) const {
 	}
 
 	throw runtime_error("Shit done fucked up (getPiece).");
+}
+
+bool Game::isChecked() const { return isChecked(_turn); }
+
+bool Game::isChecked(Players player) const {
+	const vector<Piece>&thisPlayer = player == Players::WHITE ? _white : _black, &other = player == Players::WHITE ? _black : _white;
+	Position kingPos;
+
+	for (const Piece& piece : thisPlayer) {
+		if (piece._type == PieceTypes::KING) {
+			kingPos = piece._position;
+		}
+	}
+
+	for (const Piece& opponentPiece : other) {
+		switch (opponentPiece._type) {
+			case PieceTypes::PAWN:
+				try {
+					// TODO: no idea if en passant is an edge case here? (i think it shouldnt)
+					_validatePawnMove({.from = opponentPiece._position, .to = kingPos});
+					break;	// normal breakout of switch block, triggering "trap"
+				} catch (...) {
+					continue;  // skips the "trap" at the bottom of each iteration
+				}
+			case PieceTypes::KNIGHT:
+				try {
+					_validateKnightMove({.from = opponentPiece._position, .to = kingPos});
+					break;
+				} catch (...) {
+					continue;
+				}
+			case PieceTypes::BISHOP:
+				try {
+					_validateBishopMove({.from = opponentPiece._position, .to = kingPos});
+					break;
+				} catch (...) {
+					continue;
+				}
+			case PieceTypes::ROOK:
+				try {
+					_validateRookMove({.from = opponentPiece._position, .to = kingPos});
+					break;
+				} catch (...) {
+					continue;
+				}
+			case PieceTypes::QUEEN:
+				try {
+					_validateRookMove({.from = opponentPiece._position, .to = kingPos});
+					break;
+				} catch (...) {
+					try {
+						_validateBishopMove({.from = opponentPiece._position, .to = kingPos});
+						break;
+					} catch (...) {
+						continue;
+					}
+				}
+			case PieceTypes::KING:
+				try {
+					_validateKingMove({.from = opponentPiece._position, .to = kingPos});
+					break;
+				} catch (...) {
+					continue;
+				}
+		}
+
+		return true;
+	}
+
+	return false;
 }
 
 Piece& Game::_getPieceRef(const Position& pos) {
