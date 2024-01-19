@@ -8,7 +8,7 @@ using namespace std;
 
 void printBoard(const Game& game, bool squareSelected, const Position& selectedSquare);
 
-int main() {
+int main(int argc, char** argv) {
 	int ch = '\0';
 	MEVENT event;
 
@@ -27,8 +27,15 @@ int main() {
 	init_pair(1, COLOR_WHITE, COLOR_GREEN);
 	init_pair(2, COLOR_BLACK, COLOR_RED);
 
+	string fen;
+	cout << argc << endl;
+	if (argc > 1) {
+		fen = argv[1];
+		cout << "Loading from fen: " << fen << endl;
+	}
+
 	try {
-		Game game;
+		Game game = fen == "" ? Game() : Game(fen);
 		bool squareSelected = false, promoting = false;
 		Position selectedSquare, promotionSquare;
 		string error;

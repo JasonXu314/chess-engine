@@ -51,6 +51,7 @@ class Game {
 public:
 	Game();
 	Game(const Game& other);
+	Game(const std::string& fen);
 
 	// returns true if pawn reached promotion (also sets shouldPromote private variable)
 	bool move(const Move& move);

@@ -130,6 +130,87 @@ Game::Game(const Game& other)
 	}
 }
 
+Game::Game(const string& fen) : _turn(Players::WHITE), _firstMove(true), _shouldPromote(false) {
+	uint i = 0;
+
+	Position currPos = {.file = Files::A, .rank = 8};
+	while (fen[i] != ' ') {
+		if (isdigit(fen[i])) {
+			uint numSpaces = fen[i] - '0';
+
+			currPos.file = (Files)((int)currPos.file + numSpaces);
+		} else {
+			if (fen[i] == '/') {
+				currPos.file = Files::A;
+				currPos.rank--;
+			} else {
+				_board[currPos.file][currPos.rank] = fen[i];
+
+				Piece piece(fen[i], currPos);
+				if (piece._type == PieceTypes::ROOK) {
+					piece._moved = true;  // prepare for later
+				}
+
+				if (piece.player() == Players::WHITE) {
+					_white.push_back(piece);
+				} else {
+					_black.push_back(piece);
+				}
+
+				currPos.file = (Files)((int)currPos.file + 1);
+			}
+		}
+
+		i++;
+	}
+
+	i++;
+
+	if (fen[i] == 'b') {
+		_turn = Players::BLACK;
+	}
+
+	i += 2;
+
+	if (fen[i] != '-') {
+		while (fen[i] != ' ') {
+			if (isupper(fen[i])) {
+				if (fen[i] == 'K' && hasPiece({.file = Files::H, .rank = 1})) {
+					Piece& rook = _getPieceRef({.file = Files::H, .rank = 1});
+
+					if (rook._type == PieceTypes::ROOK) {
+						rook._moved = false;
+					}
+				}
+				if (fen[i] == 'Q' && hasPiece({.file = Files::A, .rank = 1})) {
+					Piece& rook = _getPieceRef({.file = Files::A, .rank = 1});
+
+					if (rook._type == PieceTypes::ROOK) {
+						rook._moved = false;
+					}
+				}
+			} else {
+				if (fen[i] == 'k' && hasPiece({.file = Files::H, .rank = 1})) {
+					Piece& rook = _getPieceRef({.file = Files::H, .rank = 1});
+
+					if (rook._type == PieceTypes::ROOK) {
+						rook._moved = false;
+					}
+				}
+				if (fen[i] == 'q' && hasPiece({.file = Files::A, .rank = 1})) {
+					Piece& rook = _getPieceRef({.file = Files::A, .rank = 1});
+
+					if (rook._type == PieceTypes::ROOK) {
+						rook._moved = false;
+					}
+				}
+			}
+
+			i++;
+		}
+	}
+}
+
 bool Game::move(const Move& move) {
 	if (_shouldPromote) {
 		throw runtime_error("Select a promotion piece first.");
