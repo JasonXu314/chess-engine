@@ -8,6 +8,12 @@ Board::Board() : _board(new char[64]) {
 	}
 }
 
+Board::Board(const Board& other) : _board(new char[64]) {
+	for (int i = 0; i < 64; i++) {
+		_board[i] = other._board[i];
+	}
+}
+
 char Board::get(uint rank, uint file) const {
 	if (rank > 7 || file > 7) throw runtime_error("Out of bounds.");
 

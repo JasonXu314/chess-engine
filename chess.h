@@ -50,8 +50,9 @@ std::ostream& operator<<(std::ostream& out, const Piece& piece);
 class Game {
 public:
 	Game();
+	Game(const Game& other);
 
-	// returns true if pawn reached promotion
+	// returns true if pawn reached promotion (also sets shouldPromote private variable)
 	bool move(const Move& move);
 
 	void promote(const Position& pos, PieceTypes to);
@@ -67,6 +68,8 @@ public:
 
 	Players turn() const;
 
+	bool shouldPromote() const;
+
 private:
 	Board _board;
 	std::vector<Piece> _white;
@@ -74,6 +77,7 @@ private:
 	Players _turn;
 	bool _firstMove;
 	Move _prevMove;
+	bool _shouldPromote;
 
 	Piece& _getPieceRef(const Position& pos);
 

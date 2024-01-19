@@ -9,6 +9,7 @@
 class Board {
 public:
 	Board();
+	Board(const Board& other);
 
 	char get(uint rank, uint file) const;
 

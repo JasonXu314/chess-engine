@@ -80,7 +80,7 @@ ostream& operator<<(ostream& out, const Piece& piece) {
 	return out << name << " (" << (piece._player == Players::WHITE ? "White" : "Black") << "), " << to_string(piece._position);
 }
 
-Game::Game() : _turn(Players::WHITE), _firstMove(true) {
+Game::Game() : _turn(Players::WHITE), _firstMove(true), _shouldPromote(false) {
 	for (const Files file : FILES) {
 		_board[file][2] = 'P';
 		_board[file][7] = 'p';
@@ -118,7 +118,21 @@ Game::Game() : _turn(Players::WHITE), _firstMove(true) {
 	_black.push_back(Piece('k', {.file = Files::E, .rank = 8}));
 }
 
+Game::Game(const Game& other)
+	: _board(other._board), _turn(other._turn), _firstMove(other._firstMove), _prevMove(other._prevMove), _shouldPromote(other._shouldPromote) {
+	for (const Piece& piece : other._white) {
+		_white.push_back(Piece(piece._symbol, piece._position));
+	}
+	for (const Piece& piece : other._black) {
+		_black.push_back(Piece(piece._symbol, piece._position));
+	}
+}
+
 bool Game::move(const Move& move) {
+	if (_shouldPromote) {
+		throw runtime_error("Select a promotion piece first.");
+	}
+
 	Piece& piece = _getPieceRef(move.from);
 
 	if (piece._player != _turn) {
@@ -301,6 +315,7 @@ bool Game::move(const Move& move) {
 	}
 
 	if (piece._type == PieceTypes::PAWN && move.to.rank == (_turn == Players::WHITE ? 8 : 1)) {
+		_shouldPromote = true;
 		return true;
 	} else {
 		_turn = (_turn == Players::WHITE ? Players::BLACK : Players::WHITE);
@@ -350,6 +365,7 @@ void Game::promote(const Position& pos, PieceTypes to) {
 
 	_board[pos.file][pos.rank] = piece._symbol;
 	_turn = (_turn == Players::WHITE ? Players::BLACK : Players::WHITE);
+	_shouldPromote = false;
 }
 
 Piece Game::getPiece(const Position& pos) const {
@@ -486,6 +502,7 @@ bool Game::hasPiece(const Position& pos) const { return _board[pos.file][pos.ran
 
 const Board& Game::board() const { return _board; }
 Players Game::turn() const { return _turn; }
+bool Game::shouldPromote() const { return _shouldPromote; }
 
 void Game::_validatePawnMove(const Move& move) const {
 	Piece piece = getPiece(move.from);

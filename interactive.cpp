@@ -40,32 +40,27 @@ int main() {
 						if (event.bstate & BUTTON1_CLICKED) {
 							if (event.y / 3 < 8 && event.x / 6 < 8) {
 								Position pos = {.file = (Files)(event.x / 6), .rank = (uint)(8 - (event.y / 3))};
-
-								if (promoting) {
-									error = "Select a promotion piece first.";	// TODO: figure out a way for engine to validate this as well
-								} else {
-									if (squareSelected) {
-										if (pos == selectedSquare) {
-											squareSelected = false;
-										} else {
-											try {
-												if ((promoting = game.move({.from = selectedSquare, .to = pos}))) {
-													promotionSquare = pos;
-												}
-												squareSelected = false;
-												error = "";
-											} catch (const runtime_error& e) {
-												error = e.what();
-											} catch (...) {
-												error = "Unknown error";
-											}
-										}
-
+								if (squareSelected) {
+									if (pos == selectedSquare) {
+										squareSelected = false;
 									} else {
-										squareSelected = true;
-										selectedSquare = pos;
-										error = "";
+										try {
+											if ((promoting = game.move({.from = selectedSquare, .to = pos}))) {
+												promotionSquare = pos;
+											}
+											squareSelected = false;
+											error = "";
+										} catch (const runtime_error& e) {
+											error = e.what();
+										} catch (...) {
+											error = "Unknown error";
+										}
 									}
+
+								} else {
+									squareSelected = true;
+									selectedSquare = pos;
+									error = "";
 								}
 							} else if (promoting) {
 								if (event.y == 1 && event.x >= 32 && event.y < 37) {
