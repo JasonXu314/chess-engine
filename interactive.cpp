@@ -42,6 +42,7 @@ int main() {
 								try {
 									game.move({.from = selectedSquare, .to = {.file = (Files)(event.x / 2), .rank = (uint)(8 - event.y)}});
 									squareSelected = false;
+									error = "";
 								} catch (const runtime_error& e) {
 									error = e.what();
 								} catch (...) {
@@ -70,11 +71,13 @@ int main() {
 		if (squareSelected) {
 			mvprintw(8, 0, to_string(selectedSquare).c_str());
 		}
+		mvprintw(9, 0, game.turn() == Players::WHITE ? "White to move" : "Black to move");
 		if (error != "") {
 			attron(COLOR_PAIR(2));
-			mvprintw(9, 0, error.c_str());
+			mvprintw(10, 0, error.c_str());
 			attroff(COLOR_PAIR(2));
 		}
+		mvprintw(15, 0, "White is uppercase, black is lowercase");
 		mvprintw(16, 0, "Click to select a square, click again to move");
 		mvprintw(17, 0, "Middle/right click to deselect");
 		refresh();

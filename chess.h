@@ -59,6 +59,8 @@ public:
 
 	const Board& board() const;
 
+	Players turn() const;
+
 private:
 	Board _board;
 	std::vector<Piece> _white;
@@ -68,6 +70,9 @@ private:
 	Move _prevMove;
 
 	Piece& _getPieceRef(const Position& pos);
+
+	// Not a direct substitute for the public version, is needed for timing reliability (en passant edge case in move), and is less performant
+	bool _hasPiece(const Position& pos) const;
 
 	void _validatePawnMove(const Move& move) const;
 	void _validateKnightMove(const Move& move) const;

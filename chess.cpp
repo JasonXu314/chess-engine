@@ -167,6 +167,7 @@ void Game::move(const Move& move) {
 			break;
 	}
 
+	char temp = _board[move.to.file][move.to.rank];
 	_board[move.from.file][move.from.rank] = '\0';
 	_board[move.to.file][move.to.rank] = piece._symbol;
 
@@ -184,6 +185,8 @@ void Game::move(const Move& move) {
 	}
 
 	for (const Piece& opponentPiece : other) {
+		if (opponentPiece._position == move.to) continue;  // TODO: consider en passant
+
 		switch (opponentPiece._type) {
 			case PieceTypes::PAWN:
 				try {
@@ -237,8 +240,39 @@ void Game::move(const Move& move) {
 
 		// "undo" move
 		_board[move.from.file][move.from.rank] = piece._symbol;
-		_board[move.to.file][move.to.rank] = '\0';
+		_board[move.to.file][move.to.rank] = temp;
 		throw runtime_error("Illegal move: moving into check/moving while in check.");
+	}
+
+	if (isCapture) {
+		uint capturedIdx = (uint)-1;
+		for (uint i = 0; i < other.size(); i++) {
+			if (other[i]._position == move.to) {
+				capturedIdx = i;
+			}
+		}
+
+		if (capturedIdx != (uint)-1) {
+			other.erase(other.begin() + capturedIdx);
+		} else {
+			throw runtime_error("Shit done fucked up (capture logic)");
+		}
+	} else if (piece._type == PieceTypes::PAWN && move.to.file != move.from.file && !_hasPiece(move.to) &&
+			   _hasPiece({.file = move.to.file, .rank = move.to.rank + (_turn == Players::WHITE ? -1 : 1)})) {
+		uint capturedIdx = (uint)-1;
+		for (uint i = 0; i < other.size(); i++) {
+			if (other[i]._position == Position{.file = move.to.file, .rank = move.to.rank + (_turn == Players::WHITE ? -1 : 1)} &&
+				other[i]._type == PieceTypes::PAWN) {
+				capturedIdx = i;
+			}
+		}
+
+		if (capturedIdx != (uint)-1) {
+			other.erase(other.begin() + capturedIdx);
+			_board[move.to.file][move.to.rank + (_turn == Players::WHITE ? -1 : 1)] = '\0';
+		} else {
+			throw runtime_error("Shit done fucked up (capture logic)");
+		}
 	}
 
 	piece._position = move.to;
@@ -271,9 +305,13 @@ Piece Game::getPiece(const Position& pos) const {
 		throw runtime_error("No piece at position " + to_string(pos));
 	}
 
-	vector<Piece> player = isupper(symbol) ? _white : _black;
+	for (const Piece& piece : _white) {
+		if (piece._position == pos) {
+			return piece;
+		}
+	}
 
-	for (const Piece& piece : player) {
+	for (const Piece& piece : _black) {
 		if (piece._position == pos) {
 			return piece;
 		}
@@ -289,9 +327,13 @@ Piece& Game::_getPieceRef(const Position& pos) {
 		throw runtime_error("No piece at position " + to_string(pos));
 	}
 
-	vector<Piece>& player = isupper(symbol) ? _white : _black;
+	for (Piece& piece : _white) {
+		if (piece._position == pos) {
+			return piece;
+		}
+	}
 
-	for (Piece& piece : player) {
+	for (Piece& piece : _black) {
 		if (piece._position == pos) {
 			return piece;
 		}
@@ -300,9 +342,26 @@ Piece& Game::_getPieceRef(const Position& pos) {
 	throw runtime_error("Shit done fucked up (getPieceRef).");
 }
 
+bool Game::_hasPiece(const Position& pos) const {
+	for (const Piece& piece : _white) {
+		if (piece._position == pos) {
+			return true;
+		}
+	}
+
+	for (const Piece& piece : _black) {
+		if (piece._position == pos) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
 bool Game::hasPiece(const Position& pos) const { return _board[pos.file][pos.rank] != '\0'; }
 
 const Board& Game::board() const { return _board; }
+Players Game::turn() const { return _turn; }
 
 void Game::_validatePawnMove(const Move& move) const {
 	Piece piece = getPiece(move.from);
@@ -316,7 +375,7 @@ void Game::_validatePawnMove(const Move& move) const {
 					  (move.to.file != move.from.file + 1 &&
 					   move.to.file != move.from.file - 1))) {	// shouldn't have to worry about overflow because it won't be equal anyway
 		throw runtime_error("Illegal pawn move from " + to_string(move.from) + " to " + to_string(move.to) + ": captures must be diagonal.");
-	} else {
+	} else if (!isCapture) {
 		if (move.to.file != move.from.file) {
 			throw runtime_error("Illegal pawn move from " + to_string(move.from) + " to " + to_string(move.to) + ": normal moves must be straight.");
 		}
@@ -411,6 +470,7 @@ void Game::_validateRookMove(const Move& move) const {
 }
 
 void Game::_validateKingMove(const Move& move) const {
+	// TODO: may have to fix check logic by disallowing pieces from moving to their own square in each piece's logic
 	int diffRank = abs((int)move.to.rank - (int)move.from.rank), diffFile = abs((int)move.to.file - (int)move.from.file);
 
 	if (diffRank > 1) {
