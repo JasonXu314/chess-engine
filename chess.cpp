@@ -48,6 +48,7 @@ Piece::Piece(char symbol, Position position)
 const Position& Piece::position() const { return _position; }
 PieceTypes Piece::type() const { return _type; }
 Players Piece::player() const { return _player; }
+char Piece::symbol() const { return _symbol; }
 
 ostream& operator<<(ostream& out, const Piece& piece) {
 	string name;
@@ -300,6 +301,8 @@ Piece& Game::_getPieceRef(const Position& pos) {
 }
 
 bool Game::hasPiece(const Position& pos) const { return _board[pos.file][pos.rank] != '\0'; }
+
+const Board& Game::board() const { return _board; }
 
 void Game::_validatePawnMove(const Move& move) const {
 	Piece piece = getPiece(move.from);

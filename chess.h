@@ -31,6 +31,8 @@ public:
 
 	Players player() const;
 
+	char symbol() const;
+
 	friend class Game;
 	friend std::ostream& operator<<(std::ostream& out, const Piece& piece);
 
@@ -54,6 +56,8 @@ public:
 	Piece getPiece(const Position& pos) const;
 
 	bool hasPiece(const Position& pos) const;
+
+	const Board& board() const;
 
 private:
 	Board _board;
