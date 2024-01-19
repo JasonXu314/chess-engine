@@ -51,7 +51,10 @@ class Game {
 public:
 	Game();
 
-	void move(const Move& move);
+	// returns true if pawn reached promotion
+	bool move(const Move& move);
+
+	void promote(const Position& pos, PieceTypes to);
 
 	Piece getPiece(const Position& pos) const;
 

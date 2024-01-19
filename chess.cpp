@@ -118,7 +118,7 @@ Game::Game() : _turn(Players::WHITE), _firstMove(true) {
 	_black.push_back(Piece('k', {.file = Files::E, .rank = 8}));
 }
 
-void Game::move(const Move& move) {
+bool Game::move(const Move& move) {
 	Piece& piece = _getPieceRef(move.from);
 
 	if (piece._player != _turn) {
@@ -288,7 +288,6 @@ void Game::move(const Move& move) {
 	}
 
 	_prevMove = move;
-	_turn = (_turn == Players::WHITE ? Players::BLACK : Players::WHITE);
 
 	if (_firstMove) {
 		_firstMove = false;
@@ -296,6 +295,57 @@ void Game::move(const Move& move) {
 	if (!piece._moved) {
 		piece._moved = true;
 	}
+
+	if (piece._type == PieceTypes::PAWN && move.to.rank == (_turn == Players::WHITE ? 8 : 1)) {
+		return true;
+	} else {
+		_turn = (_turn == Players::WHITE ? Players::BLACK : Players::WHITE);
+
+		return false;
+	}
+}
+
+void Game::promote(const Position& pos, PieceTypes to) {
+	Piece& piece = _getPieceRef(pos);
+
+	if (piece._player != _turn) {
+		throw runtime_error("Moved piece does not belong to moving player.");
+	}
+	if (piece._type != PieceTypes::PAWN) {
+		throw runtime_error("Promotion piece must be a pawn.");
+	}
+	if (pos.rank != (_turn == Players::WHITE ? 8 : 1)) {
+		throw runtime_error("Promotion rank must be back rank of opposing player.");
+	}
+	if (to == PieceTypes::PAWN) {
+		throw runtime_error("Cannot promote to pawn (though i have no idea why you'd even attempt to do this).");
+	}
+	if (to == PieceTypes::KING) {
+		throw runtime_error("Cannot promote to king (nice try).");
+	}
+
+	// TODO: consider moving this to private promotion method on piece
+	piece._type = to;
+	switch (to) {
+		case PieceTypes::KNIGHT:
+			piece._symbol = _turn == Players::WHITE ? 'N' : 'n';
+			break;
+		case PieceTypes::BISHOP:
+			piece._symbol = _turn == Players::WHITE ? 'B' : 'b';
+			break;
+		case PieceTypes::ROOK:
+			piece._symbol = _turn == Players::WHITE ? 'R' : 'r';
+			break;
+		case PieceTypes::QUEEN:
+			piece._symbol = _turn == Players::WHITE ? 'Q' : 'q';
+			break;
+		default:
+			throw runtime_error("Shit done fucked up (promotion)");
+	}
+	piece._value = valueOf(piece._type);
+
+	_board[pos.file][pos.rank] = piece._symbol;
+	_turn = (_turn == Players::WHITE ? Players::BLACK : Players::WHITE);
 }
 
 Piece Game::getPiece(const Position& pos) const {
