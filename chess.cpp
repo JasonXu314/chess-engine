@@ -190,15 +190,15 @@ Game::Game(const string& fen) : _turn(Players::WHITE), _firstMove(true), _should
 					}
 				}
 			} else {
-				if (fen[i] == 'k' && hasPiece({.file = Files::H, .rank = 1})) {
-					Piece& rook = _getPieceRef({.file = Files::H, .rank = 1});
+				if (fen[i] == 'k' && hasPiece({.file = Files::H, .rank = 8})) {
+					Piece& rook = _getPieceRef({.file = Files::H, .rank = 8});
 
 					if (rook._type == PieceTypes::ROOK) {
 						rook._moved = false;
 					}
 				}
-				if (fen[i] == 'q' && hasPiece({.file = Files::A, .rank = 1})) {
-					Piece& rook = _getPieceRef({.file = Files::A, .rank = 1});
+				if (fen[i] == 'q' && hasPiece({.file = Files::A, .rank = 8})) {
+					Piece& rook = _getPieceRef({.file = Files::A, .rank = 8});
 
 					if (rook._type == PieceTypes::ROOK) {
 						rook._moved = false;
@@ -759,6 +759,24 @@ vector<Move> Game::getAvailableMoves() const {
 					(!hasPiece(newPos) || (hasPiece(newPos) && getPiece(newPos)._player != _turn))) {
 					out.push_back({.from = piece._position, .to = newPos});
 				}
+
+				// account for castling
+				if (!piece._moved) {
+					if (hasPiece({.file = Files::H, .rank = _turn == Players::WHITE ? 1u : 8u})) {
+						Piece kingRook = getPiece({.file = Files::H, .rank = _turn == Players::WHITE ? 1u : 8u});
+
+						if (!kingRook._moved) {
+							out.push_back({.from = piece._position, .to = {.file = Files::G, .rank = _turn == Players::WHITE ? 1u : 8u}});
+						}
+					}
+					if (hasPiece({.file = Files::A, .rank = _turn == Players::WHITE ? 1u : 8u})) {
+						Piece queenRook = getPiece({.file = Files::A, .rank = _turn == Players::WHITE ? 1u : 8u});
+
+						if (!queenRook._moved) {
+							out.push_back({.from = piece._position, .to = {.file = Files::C, .rank = _turn == Players::WHITE ? 1u : 8u}});
+						}
+					}
+				}
 				break;
 		}
 	}
@@ -1092,7 +1110,13 @@ void Game::_validateKingMove(const Move& move) const {
 		int castleDir = (int)move.to.file - (int)move.from.file < 0 ? -1 : 1;
 		Piece king = getPiece(move.from), rook = getPiece({.file = castleDir == -1 ? Files::A : Files::H, .rank = _turn == Players::WHITE ? 1u : 8u});
 
-		if (diffFile == 2 && !king._moved && !rook._moved) {
+		if (diffFile == 2 && king._type == PieceTypes::KING && !king._moved && rook._type == PieceTypes::ROOK && !rook._moved) {
+			for (uint file = king._position.file + castleDir; file < rook._position.file; file += castleDir) {
+				if (hasPiece({.file = (Files)file, .rank = _turn == Players::WHITE ? 1u : 8u})) {
+					throw runtime_error("Illegal king move: castling through piece.");
+				}
+			}
+
 			const vector<Piece>& other = _turn == Players::WHITE ? _black : _white;
 
 			for (const Piece& opponentPiece : other) {
