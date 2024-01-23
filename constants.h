@@ -9,6 +9,7 @@ enum PieceTypes { PAWN, KNIGHT, BISHOP, ROOK, QUEEN, KING };
 
 extern const Files FILES[8];
 extern const uint RANKS[8];
+extern const PieceTypes PIECE_TYPES[6];
 
 uint valueOf(PieceTypes type);
 

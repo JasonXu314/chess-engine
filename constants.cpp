@@ -2,6 +2,7 @@
 
 const Files FILES[8] = {A, B, C, D, E, F, G, H};
 const uint RANKS[8] = {1, 2, 3, 4, 5, 6, 7, 8};
+const PieceTypes PIECE_TYPES[6] = {PieceTypes::PAWN, PieceTypes::KNIGHT, PieceTypes::BISHOP, PieceTypes::ROOK, PieceTypes::QUEEN, PieceTypes::KING};
 
 uint valueOf(PieceTypes type) {
 	switch (type) {
