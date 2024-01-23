@@ -58,6 +58,7 @@ public:
 
 	// Evaluates the move in a new game (for hypothetical futures); note the const
 	Game branch(const Move& other) const;
+	Game branchPromote(const Position& pos, PieceTypes to) const;
 
 	std::vector<Move> getAvailableMoves() const;
 

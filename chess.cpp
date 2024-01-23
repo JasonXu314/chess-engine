@@ -421,6 +421,20 @@ Game Game::branch(const Move& move) const {
 	}
 }
 
+Game Game::branchPromote(const Position& pos, PieceTypes to) const {
+	Game future(*this);
+
+	try {
+		future.promote(pos, to);
+
+		return future;
+	} catch (const runtime_error& err) {
+		throw runtime_error("Branching error: promotion failed with '" + string(err.what()) + "'");
+	} catch (...) {
+		throw runtime_error("Branching error: promotion failed with unknown error.");
+	}
+}
+
 vector<Move> Game::getAvailableMoves() const {
 	vector<Move> out;
 
@@ -795,6 +809,10 @@ vector<Move> Game::getAvailableMoves() const {
 }
 
 void Game::promote(const Position& pos, PieceTypes to) {
+	if (!_shouldPromote) {
+		throw runtime_error("No promotion available.");
+	}
+
 	Piece& piece = _getPieceRef(pos);
 
 	if (piece._player != _turn) {
