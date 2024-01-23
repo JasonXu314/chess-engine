@@ -62,6 +62,8 @@ public:
 
 	std::vector<Move> getAvailableMoves() const;
 
+	uint materiel(Players player) const;
+
 	void promote(const Position& pos, PieceTypes to);
 
 	bool isChecked() const;

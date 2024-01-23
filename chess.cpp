@@ -808,6 +808,16 @@ vector<Move> Game::getAvailableMoves() const {
 	return out;
 }
 
+uint Game::materiel(Players player) const {
+	uint total = 0;
+
+	for (const Piece& piece : player == Players::WHITE ? _white : _black) {
+		total += valueOf(piece._type);
+	}
+
+	return total;
+}
+
 void Game::promote(const Position& pos, PieceTypes to) {
 	if (!_shouldPromote) {
 		throw runtime_error("No promotion available.");
