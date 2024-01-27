@@ -998,6 +998,8 @@ string Game::dumpFEN() const {
 				}
 			}
 		}
+
+		fen += "/";
 	}
 
 	fen += ' ';
@@ -1037,9 +1039,9 @@ string Game::dumpFEN() const {
 	if (bKingCastle) {
 		for (const Piece& piece : _black) {
 			if (piece._type == PieceTypes::ROOK && !piece._moved) {
-				if (piece._position == Position{.file = Files::A, .rank = 1}) {
+				if (piece._position == Position{.file = Files::A, .rank = 8}) {
 					fen += 'k';
-				} else if (piece._position == Position{.file = Files::H, .rank = 1}) {
+				} else if (piece._position == Position{.file = Files::H, .rank = 8}) {
 					fen += 'q';
 				} else {
 					throw runtime_error("Piece state done fucked up");
@@ -1048,11 +1050,17 @@ string Game::dumpFEN() const {
 		}
 	}
 
+	if (fen.back() == ' ') {
+		fen += "- ";
+	}
+
 	if (_prevMoveEnPassant) {
 		string moveStr = to_string(_prevMove.to);
 		moveStr[0] = tolower(moveStr[0]);
 
 		fen += moveStr;
+	} else {
+		fen += '-';
 	}
 
 	return fen;
