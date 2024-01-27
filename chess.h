@@ -69,6 +69,8 @@ public:
 	bool isChecked() const;
 	bool isChecked(Players player) const;
 
+	std::string dumpFEN() const;
+
 	Piece getPiece(const Position& pos) const;
 
 	bool hasPiece(const Position& pos) const;
@@ -88,6 +90,7 @@ private:
 	Players _turn;
 	bool _firstMove;
 	Move _prevMove;
+	bool _prevMoveEnPassant;
 	bool _shouldPromote;
 
 	Piece& _getPieceRef(const Position& pos);
