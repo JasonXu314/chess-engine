@@ -986,7 +986,7 @@ bool Game::isChecked(Players player) const {
 string Game::dumpFEN() const {
 	string fen;
 
-	for (uint rank : RANKS) {
+	for (uint rank = 8; rank >= 1; rank--) {
 		for (Files file : FILES) {
 			if (hasPiece({.file = file, .rank = rank})) {
 				fen += getPiece({.file = file, .rank = rank})._symbol;
