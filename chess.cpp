@@ -849,10 +849,10 @@ void Game::promote(const Position& pos, PieceTypes to) {
 	Piece& piece = _getPieceRef(pos);
 
 	if (piece._player != _turn) {
-		throw runtime_error("Moved piece does not belong to moving player.");
+		throw runtime_error("Promotion piece on " + to_string(pos) + " does not belong to moving player.");
 	}
 	if (piece._type != PieceTypes::PAWN) {
-		throw runtime_error("Promotion piece must be a pawn.");
+		throw runtime_error("Promotion piece " + to_string(pos) + " must be a pawn.");
 	}
 	if (pos.rank != (_turn == Players::WHITE ? 8 : 1)) {
 		throw runtime_error("Promotion rank must be back rank of opposing player.");
