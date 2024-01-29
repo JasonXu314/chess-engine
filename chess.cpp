@@ -1002,6 +1002,7 @@ string Game::dumpFEN() const {
 		fen += "/";
 	}
 
+	fen.pop_back();
 	fen += ' ';
 	fen += _turn == Players::WHITE ? 'w' : 'b';
 
