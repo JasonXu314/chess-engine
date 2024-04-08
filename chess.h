@@ -57,7 +57,7 @@ public:
 	bool move(const Move& move);
 
 	// Evaluates the move in a new game (for hypothetical futures); note the const
-	Game branch(const Move& other) const;
+	Game branch(const Move& move) const;
 	Game branchPromote(const Position& pos, PieceTypes to) const;
 
 	std::vector<Move> getAvailableMoves() const;
@@ -75,8 +75,6 @@ public:
 
 	bool hasPiece(const Position& pos) const;
 
-	const Board& board() const;
-
 	Players turn() const;
 
 	bool shouldPromote() const;
@@ -84,7 +82,6 @@ public:
 	Game& operator=(const Game& other);
 
 private:
-	Board _board;
 	std::vector<Piece> _white;
 	std::vector<Piece> _black;
 	Players _turn;
@@ -95,8 +92,7 @@ private:
 
 	Piece& _getPieceRef(const Position& pos);
 
-	// Not a direct substitute for the public version, is needed for timing reliability (en passant edge case in move), and is less performant
-	bool _hasPiece(const Position& pos) const;
+	Game _uncheckedBranch(const Move& move) const;
 
 	void _validatePawnMove(const Move& move) const;
 	void _validateKnightMove(const Move& move) const;

@@ -94,45 +94,31 @@ ostream& operator<<(ostream& out, const Piece& piece) {
 
 Game::Game() : _turn(Players::WHITE), _firstMove(true), _prevMoveEnPassant(false), _shouldPromote(false) {
 	for (const Files file : FILES) {
-		_board[file][2] = 'P';
-		_board[file][7] = 'p';
-
 		_white.push_back(Piece('P', {.file = file, .rank = 2}));
 		_black.push_back(Piece('p', {.file = file, .rank = 7}));
 	}
 
-	_board[Files::A][1] = _board[Files::H][1] = 'R';
 	_white.push_back(Piece('R', {.file = Files::A, .rank = 1}));
 	_white.push_back(Piece('R', {.file = Files::H, .rank = 1}));
-	_board[Files::B][1] = _board[Files::G][1] = 'N';
 	_white.push_back(Piece('N', {.file = Files::B, .rank = 1}));
 	_white.push_back(Piece('N', {.file = Files::G, .rank = 1}));
-	_board[Files::C][1] = _board[Files::F][1] = 'B';
 	_white.push_back(Piece('B', {.file = Files::C, .rank = 1}));
 	_white.push_back(Piece('B', {.file = Files::F, .rank = 1}));
-	_board[Files::D][1] = 'Q';
 	_white.push_back(Piece('Q', {.file = Files::D, .rank = 1}));
-	_board[Files::E][1] = 'K';
 	_white.push_back(Piece('K', {.file = Files::E, .rank = 1}));
 
-	_board[Files::A][8] = _board[Files::H][8] = 'r';
 	_black.push_back(Piece('r', {.file = Files::A, .rank = 8}));
 	_black.push_back(Piece('r', {.file = Files::H, .rank = 8}));
-	_board[Files::B][8] = _board[Files::G][8] = 'n';
 	_black.push_back(Piece('n', {.file = Files::B, .rank = 8}));
 	_black.push_back(Piece('n', {.file = Files::G, .rank = 8}));
-	_board[Files::C][8] = _board[Files::F][8] = 'b';
 	_black.push_back(Piece('b', {.file = Files::C, .rank = 8}));
 	_black.push_back(Piece('b', {.file = Files::F, .rank = 8}));
-	_board[Files::D][8] = 'q';
 	_black.push_back(Piece('q', {.file = Files::D, .rank = 8}));
-	_board[Files::E][8] = 'k';
 	_black.push_back(Piece('k', {.file = Files::E, .rank = 8}));
 }
 
 Game::Game(const Game& other)
-	: _board(other._board),
-	  _turn(other._turn),
+	: _turn(other._turn),
 	  _firstMove(other._firstMove),
 	  _prevMove(other._prevMove),
 	  _prevMoveEnPassant(other._prevMoveEnPassant),
@@ -159,8 +145,6 @@ Game::Game(const string& fen) : _turn(Players::WHITE), _firstMove(true), _prevMo
 				currPos.file = Files::A;
 				currPos.rank--;
 			} else {
-				_board[currPos.file][currPos.rank] = fen[i];
-
 				Piece piece(fen[i], currPos);
 				if (piece._type == PieceTypes::ROOK) {
 					piece._moved = true;  // prepare for later
@@ -284,10 +268,6 @@ bool Game::move(const Move& move) {
 			break;
 	}
 
-	char temp = _board[move.to.file][move.to.rank];
-	_board[move.from.file][move.from.rank] = '\0';
-	_board[move.to.file][move.to.rank] = piece._symbol;
-
 	vector<Piece>&player = _turn == Players::WHITE ? _white : _black, &other = _turn == Players::WHITE ? _black : _white;
 	Position kingPos;
 
@@ -301,64 +281,7 @@ bool Game::move(const Move& move) {
 		}
 	}
 
-	// Using a different algorithm here compared to the isChecked function because we have to deal with the fact that we're "inside" of a move
-	for (const Piece& opponentPiece : other) {
-		if (opponentPiece._position == move.to) continue;  // TODO: consider en passant
-
-		switch (opponentPiece._type) {
-			case PieceTypes::PAWN:
-				try {
-					// TODO: no idea if en passant is an edge case here? (i think it shouldnt)
-					_validatePawnMove({.from = opponentPiece._position, .to = kingPos});
-					break;	// normal breakout of switch block, triggering "trap"
-				} catch (...) {
-					continue;  // skips the "trap" at the bottom of each iteration
-				}
-			case PieceTypes::KNIGHT:
-				try {
-					_validateKnightMove({.from = opponentPiece._position, .to = kingPos});
-					break;
-				} catch (...) {
-					continue;
-				}
-			case PieceTypes::BISHOP:
-				try {
-					_validateBishopMove({.from = opponentPiece._position, .to = kingPos});
-					break;
-				} catch (...) {
-					continue;
-				}
-			case PieceTypes::ROOK:
-				try {
-					_validateRookMove({.from = opponentPiece._position, .to = kingPos});
-					break;
-				} catch (...) {
-					continue;
-				}
-			case PieceTypes::QUEEN:
-				try {
-					_validateRookMove({.from = opponentPiece._position, .to = kingPos});
-					break;
-				} catch (...) {
-					try {
-						_validateBishopMove({.from = opponentPiece._position, .to = kingPos});
-						break;
-					} catch (...) {
-						continue;
-					}
-				}
-			case PieceTypes::KING:
-				try {
-					_validateKingMove({.from = opponentPiece._position, .to = kingPos});
-					break;
-				} catch (...) {
-					continue;
-				}
-		}
-
-		// "undo" move
-		_board[move.from.file][move.from.rank] = piece._symbol;
-		_board[move.to.file][move.to.rank] = temp;
+	if (_uncheckedBranch(move).isChecked()) {
 		throw runtime_error("Illegal move: moving into check/moving while in check.");
 	}
 
@@ -376,8 +299,8 @@ bool Game::move(const Move& move) {
 		} else {
 			throw runtime_error("Shit done fucked up (capture logic)");
 		}
-	} else if (piece._type == PieceTypes::PAWN && move.to.file != move.from.file && !_hasPiece(move.to) &&
-			   _hasPiece({.file = move.to.file, .rank = move.to.rank + (_turn == Players::WHITE ? -1 : 1)})) {
+	} else if (piece._type == PieceTypes::PAWN && move.to.file != move.from.file && !hasPiece(move.to) &&
+			   hasPiece({.file = move.to.file, .rank = move.to.rank + (_turn == Players::WHITE ? -1 : 1)})) {
 		uint capturedIdx = (uint)-1;
 		for (uint i = 0; i < other.size(); i++) {
 			if (other[i]._position == Position{.file = move.to.file, .rank = move.to.rank + (_turn == Players::WHITE ? -1 : 1)} &&
@@ -388,7 +311,6 @@ bool Game::move(const Move& move) {
 
 		if (capturedIdx != (uint)-1) {
 			other.erase(other.begin() + capturedIdx);
-			_board[move.to.file][move.to.rank + (_turn == Players::WHITE ? -1 : 1)] = '\0';
 		} else {
 			throw runtime_error("Shit done fucked up (capture logic)");
 		}
@@ -407,8 +329,6 @@ bool Game::move(const Move& move) {
 		rookTo.file = (Files)((int)rookTo.file + (castleDir == -1 ? 1 : -1));
 
 		rook._position = rookTo;
-		_board[rookPos.file][rookPos.rank] = '\0';
-		_board[rookTo.file][rookTo.rank] = (_turn == Players::WHITE ? 'R' : 'r');
 	}
 
 	_prevMove = move;
@@ -435,6 +355,21 @@ Game Game::branch(const Move& move) const {
 
 	try {
 		future.move(move);
+
+		return future;
+	} catch (const runtime_error& err) {
+		throw runtime_error("Branching error: move failed with '" + string(err.what()) + "'");
+	} catch (...) {
+		throw runtime_error("Branching error: move failed with unknown error.");
+	}
+}
+
+Game Game::_uncheckedBranch(const Move& move) const {
+	Game future(*this);
+
+	try {
+		Piece& piece = future._getPieceRef(move.from);
+		piece._position = move.to;
 
 		return future;
 	} catch (const runtime_error& err) {
@@ -884,18 +819,11 @@ void Game::promote(const Position& pos, PieceTypes to) {
 	}
 	piece._value = valueOf(piece._type);
 
-	_board[pos.file][pos.rank] = piece._symbol;
 	_turn = (_turn == Players::WHITE ? Players::BLACK : Players::WHITE);
 	_shouldPromote = false;
 }
 
 Piece Game::getPiece(const Position& pos) const {
-	char symbol = _board[pos.file][pos.rank];
-
-	if (symbol == '\0') {
-		throw runtime_error("No piece at position " + to_string(pos));
-	}
-
 	for (const Piece& piece : _white) {
 		if (piece._position == pos) {
 			return piece;
@@ -908,7 +836,7 @@ Piece Game::getPiece(const Position& pos) const {
 		}
 	}
 
-	throw runtime_error("Shit done fucked up (getPiece).");
+	throw runtime_error("No piece at position " + to_string(pos));
 }
 
 bool Game::isChecked() const {
@@ -1068,12 +996,6 @@ string Game::dumpFEN() const {
 }
 
 Piece& Game::_getPieceRef(const Position& pos) {
-	char symbol = _board[pos.file][pos.rank];
-
-	if (symbol == '\0') {
-		throw runtime_error("No piece at position " + to_string(pos));
-	}
-
 	for (Piece& piece : _white) {
 		if (piece._position == pos) {
 			return piece;
@@ -1086,10 +1008,10 @@ Piece& Game::_getPieceRef(const Position& pos) {
 		}
 	}
 
-	throw runtime_error("Shit done fucked up (getPieceRef).");
+	throw runtime_error("No piece at position " + to_string(pos));
 }
 
-bool Game::_hasPiece(const Position& pos) const {
+bool Game::hasPiece(const Position& pos) const {
 	for (const Piece& piece : _white) {
 		if (piece._position == pos) {
 			return true;
@@ -1105,13 +1027,6 @@ bool Game::_hasPiece(const Position& pos) const {
 	return false;
 }
 
-bool Game::hasPiece(const Position& pos) const {
-	return _board[pos.file][pos.rank] != '\0';
-}
-
-const Board& Game::board() const {
-	return _board;
-}
 Players Game::turn() const {
 	return _turn;
 }
@@ -1120,7 +1035,6 @@ bool Game::shouldPromote() const {
 }
 
 Game& Game::operator=(const Game& other) {
-	_board = other._board;
 	_turn = other._turn;
 	_firstMove = other._firstMove;
 	_prevMove = other._prevMove;
