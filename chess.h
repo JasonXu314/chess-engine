@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "board.h"
+#include "constants.h"
 
 struct Position {
 	Files file;
