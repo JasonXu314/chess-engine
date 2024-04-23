@@ -92,7 +92,7 @@ ostream& operator<<(ostream& out, const Piece& piece) {
 	return out << name << " (" << (piece._player == Players::WHITE ? "White" : "Black") << "), " << to_string(piece._position);
 }
 
-Game::Game() : _turn(Players::WHITE), _firstMove(true), _prevMoveEnPassant(false), _shouldPromote(false) {
+Game::Game() : _turn(Players::WHITE), _firstMove(true), _prevMoveEnPassant(false), _shouldPromote(false), _turns(0), _halfTurnsSinceCapture(0) {
 	for (const Files file : FILES) {
 		_white.push_back(Piece('P', {.file = file, .rank = 2}));
 		_black.push_back(Piece('p', {.file = file, .rank = 7}));
@@ -213,6 +213,24 @@ Game::Game(const string& fen) : _turn(Players::WHITE), _firstMove(true), _prevMo
 	if (fen[i] != ' ') {
 		_prevMoveEnPassant = true;
 	}
+
+	i++;
+	string halfMoveClock;
+	while (fen[i] != ' ') {
+		halfMoveClock += fen[i];
+		i++;
+	}
+
+	_halfTurnsSinceCapture = stoi(halfMoveClock);
+
+	i++;
+	string fullMoveClock;
+	while (fen[i] != ' ') {
+		fullMoveClock += fen[i];
+		i++;
+	}
+
+	_turns = stoi(fullMoveClock);
 }
 
 bool Game::move(const Move& move) {
@@ -299,6 +317,7 @@ bool Game::move(const Move& move) {
 		} else {
 			throw runtime_error("Shit done fucked up (capture logic)");
 		}
+		_halfTurnsSinceCapture = 0;
 	} else if (piece._type == PieceTypes::PAWN && move.to.file != move.from.file && !hasPiece(move.to) &&
 			   hasPiece({.file = move.to.file, .rank = move.to.rank + (_turn == Players::WHITE ? -1 : 1)})) {
 		uint capturedIdx = (uint)-1;
@@ -338,6 +357,14 @@ bool Game::move(const Move& move) {
 	}
 	if (!piece._moved) {
 		piece._moved = true;
+	}
+
+	if (_turn == Players::BLACK) {
+		_turns++;
+	}
+
+	if (!isCapture) {
+		_halfTurnsSinceCapture++;
 	}
 
 	if (piece._type == PieceTypes::PAWN && move.to.rank == (_turn == Players::WHITE ? 8 : 1)) {
@@ -991,6 +1018,12 @@ string Game::dumpFEN() const {
 	} else {
 		fen += '-';
 	}
+
+	fen += ' ';
+	fen += to_string(_halfTurnsSinceCapture);
+
+	fen += ' ';
+	fen += to_string(_turns);
 
 	return fen;
 }

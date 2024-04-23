@@ -79,6 +79,10 @@ public:
 
 	bool shouldPromote() const;
 
+	int turns() const { return _turns; }
+
+	int halfTurnsSinceCapture() const { return _halfTurnsSinceCapture; }
+
 	Game& operator=(const Game& other);
 
 private:
@@ -89,6 +93,8 @@ private:
 	Move _prevMove;
 	bool _prevMoveEnPassant;
 	bool _shouldPromote;
+	int _turns;
+	int _halfTurnsSinceCapture;
 
 	Piece& _getPieceRef(const Position& pos);
 
